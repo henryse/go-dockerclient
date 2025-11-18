@@ -128,7 +128,7 @@ func (c *Client) AddEventListener(listener chan<- *APIEvents) error {
 	return c.AddEventListenerWithOptions(EventsOptions{}, listener)
 }
 
-// AddEventListener adds a new listener to container events in the Docker API.
+// AddEventListenerWithOptions AddEventListener adds a new listener to container events in the Docker API.
 // See https://docs.docker.com/engine/api/v1.41/#operation/SystemEvents for more details.
 //
 // The listener parameter is a channel through which events will be sent.

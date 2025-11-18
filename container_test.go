@@ -70,9 +70,9 @@ type sleepyRoudTripper struct {
 	sleepDuration time.Duration
 }
 
-func (rt *sleepyRoudTripper) RoundTrip(r *http.Request) (*http.Response, error) {
+func (rt *sleepyRoudTripper) RoundTrip(_ *http.Request) (*http.Response, error) {
 	time.Sleep(rt.sleepDuration)
-	return nil, errors.New("Can't complete round trip")
+	return nil, errors.New("can't complete round trip")
 }
 
 func TestNoSuchContainerError(t *testing.T) {

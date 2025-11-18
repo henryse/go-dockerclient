@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	units "github.com/docker/go-units"
+	"github.com/docker/go-units"
 )
 
 // APIPort is a type that represents a port mapping returned by the Docker API
