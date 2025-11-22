@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fsouza/go-dockerclient/internal/testutils"
+	"github.com/henryse/go-dockerclient/internal/testutils"
 	"golang.org/x/term"
 )
 

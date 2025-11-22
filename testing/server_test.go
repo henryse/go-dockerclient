@@ -26,8 +26,8 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/swarm"
-	docker "github.com/fsouza/go-dockerclient"
-	"github.com/fsouza/go-dockerclient/internal/testutils"
+	docker "github.com/henryse/go-dockerclient"
+	"github.com/henryse/go-dockerclient/internal/testutils"
 )
 
 func TestNewServer(t *testing.T) {
@@ -36,12 +36,14 @@ func TestNewServer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer server.listener.Close()
+	defer func(listener net.Listener) {
+		_ = listener.Close()
+	}(server.listener)
 	conn, err := net.Dial("tcp", server.listener.Addr().String())
 	if err != nil {
 		t.Fatal(err)
 	}
-	conn.Close()
+	_ = conn.Close()
 }
 
 func TestNewTLSServer(t *testing.T) {
@@ -57,12 +59,14 @@ func TestNewTLSServer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer server.listener.Close()
+	defer func(listener net.Listener) {
+		_ = listener.Close()
+	}(server.listener)
 	conn, err := net.Dial("tcp", server.listener.Addr().String())
 	if err != nil {
 		t.Fatal(err)
 	}
-	conn.Close()
+	_ = conn.Close()
 	client, err := docker.NewTLSClient(server.URL(), "./data/cert.pem", "./data/key.pem", "./data/ca.pem")
 	if err != nil {
 		t.Fatal(err)
@@ -104,18 +108,18 @@ func TestServerURL(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer server.Stop()
-	url := server.URL()
-	if expected := "http://" + server.listener.Addr().String() + "/"; url != expected {
-		t.Errorf("DockerServer.URL(): Want %q. Got %q.", expected, url)
+	testURL := server.URL()
+	if expected := "http://" + server.listener.Addr().String() + "/"; testURL != expected {
+		t.Errorf("DockerServer.URL(): Want %q. Got %q.", expected, testURL)
 	}
 }
 
 func TestServerURLNoListener(t *testing.T) {
 	t.Parallel()
 	server := baseDockerServer()
-	url := server.URL()
-	if url != "" {
-		t.Errorf("DockerServer.URL(): Expected empty URL on handler mode, got %q.", url)
+	testURL := server.URL()
+	if testURL != "" {
+		t.Errorf("DockerServer.URL(): Expected empty URL on handler mode, got %q.", testURL)
 	}
 }
 
@@ -154,7 +158,7 @@ func TestCustomHandler(t *testing.T) {
 	addContainers(server, 2)
 	server.CustomHandler("/containers/json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		called = true
-		fmt.Fprint(w, "Hello world")
+		_, _ = fmt.Fprint(w, "Hello world")
 	}))
 	recorder := httptest.NewRecorder()
 	request, _ := http.NewRequest(http.MethodGet, "/containers/json?all=1", nil)
@@ -175,7 +179,7 @@ func TestCustomHandlerRegexp(t *testing.T) {
 	addContainers(server, 2)
 	server.CustomHandler("/containers/.*/json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		called = true
-		fmt.Fprint(w, "Hello world")
+		_, _ = fmt.Fprint(w, "Hello world")
 	}))
 	recorder := httptest.NewRecorder()
 	request, _ := http.NewRequest(http.MethodGet, "/containers/.*/json?all=1", nil)
@@ -1933,7 +1937,9 @@ func TestBuildImageWithContentTypeTar(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer tarFile.Close()
+	defer func(tarFile *os.File) {
+		_ = tarFile.Close()
+	}(tarFile)
 	request, _ := http.NewRequest(http.MethodPost, "/build?t=teste", tarFile)
 	request.Header.Add("Content-Type", "application/tar")
 	server.buildImage(recorder, request)
@@ -1978,7 +1984,9 @@ func TestDefaultHandler(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer server.listener.Close()
+	defer func(listener net.Listener) {
+		_ = listener.Close()
+	}(server.listener)
 	if server.mux != server.DefaultHandler() {
 		t.Fatalf("DefaultHandler: Expected to return server.mux, got: %#v", server.DefaultHandler())
 	}
@@ -2686,15 +2694,17 @@ func TestUploadToContainerWithBodyTarFile(t *testing.T) {
 	}
 	buf := new(bytes.Buffer)
 	tw := tar.NewWriter(buf)
-	defer tw.Close()
+	defer func(tw *tar.Writer) {
+		_ = tw.Close()
+	}(tw)
 	hdr := &tar.Header{
 		Name: "test.tar.gz",
 		Mode: 0o600,
 		Size: int64(buf.Len()),
 	}
-	tw.WriteHeader(hdr)
-	tw.Write([]byte("something"))
-	tw.Close()
+	_ = tw.WriteHeader(hdr)
+	_, _ = tw.Write([]byte("something"))
+	_ = tw.Close()
 	server.addContainer(cont)
 	server.uploadedFiles = make(map[string]string)
 	recorder := httptest.NewRecorder()

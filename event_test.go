@@ -16,8 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fsouza/go-dockerclient/internal/testutils"
 	"github.com/google/go-cmp/cmp"
+	"github.com/henryse/go-dockerclient/internal/testutils"
 )
 
 func TestEventListeners(t *testing.T) {
