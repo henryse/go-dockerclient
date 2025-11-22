@@ -14,7 +14,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/docker/docker/pkg/archive"
+	"github.com/moby/go-archive"
 )
 
 func TestBuildImageMultipleContextsError(t *testing.T) {
@@ -98,11 +98,6 @@ func TestBuildImageContextDirDockerignoreParsing(t *testing.T) {
 		".dockerignore",
 		"Dockerfile",
 		"barfile",
-		"ca.pem",
-		"cert.pem",
-		"key.pem",
-		"server.pem",
-		"serverkey.pem",
 		"symlink",
 	}
 
@@ -157,11 +152,11 @@ func TestBuildImageSendXRegistryConfig(t *testing.T) {
 func unpackBodyTarball(req io.Reader) (tmpdir string, err error) {
 	tmpdir, err = os.MkdirTemp("", "go-dockerclient-test")
 	if err != nil {
-		return
+		return tmpdir, err
 	}
 	err = archive.Untar(req, tmpdir, &archive.TarOptions{
 		Compression: archive.Uncompressed,
 		NoLchown:    true,
 	})
-	return
+	return tmpdir, err
 }

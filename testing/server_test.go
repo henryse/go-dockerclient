@@ -26,7 +26,8 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/swarm"
-	docker "github.com/henryse/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
+	"github.com/fsouza/go-dockerclient/internal/testutils"
 )
 
 func TestNewServer(t *testing.T) {
@@ -45,10 +46,12 @@ func TestNewServer(t *testing.T) {
 
 func TestNewTLSServer(t *testing.T) {
 	t.Parallel()
+	caCert, serverCert := testutils.GenCertificate(t)
+
 	tlsConfig := TLSConfig{
-		CertPath:    "./data/server.pem",
-		CertKeyPath: "./data/serverkey.pem",
-		RootCAPath:  "./data/ca.pem",
+		CertPath:    serverCert.CertPath,
+		CertKeyPath: serverCert.KeyPath,
+		RootCAPath:  caCert.CertPath,
 	}
 	server, err := NewTLSServer("127.0.0.1:0", nil, nil, tlsConfig)
 	if err != nil {
@@ -1584,7 +1587,7 @@ func addContainers(server *DockerServer, n int) []*docker.Container {
 	defer server.cMut.Unlock()
 	var addedContainers []*docker.Container
 	for i := 0; i < n; i++ {
-		date := time.Now().Add(time.Duration((rand.Int() % (i + 1))) * time.Hour)
+		date := time.Now().Add(time.Duration(rand.Int()%(i+1)) * time.Hour)
 		container := docker.Container{
 			Name:    fmt.Sprintf("%x", rand.Int()%10000),
 			ID:      fmt.Sprintf("%x", rand.Int()%10000),
@@ -1640,7 +1643,7 @@ func addImages(server *DockerServer, n int, repo bool) []docker.Image {
 	}
 	var addedImages []docker.Image
 	for i := 0; i < n; i++ {
-		date := time.Now().Add(time.Duration((rand.Int() % (i + 1))) * time.Hour)
+		date := time.Now().Add(time.Duration(rand.Int()%(i+1)) * time.Hour)
 		image := docker.Image{
 			ID:      fmt.Sprintf("%x", rand.Int()%10000),
 			Created: date,

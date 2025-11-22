@@ -11,10 +11,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/fsouza/go-dockerclient/internal/testutils"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -25,15 +27,17 @@ func TestEventListeners(t *testing.T) {
 
 func TestTLSEventListeners(t *testing.T) {
 	t.Parallel()
+	caCert, serverCert := testutils.GenCertificate(t)
+
 	testEventListeners("TestTLSEventListeners", t, func(handler http.Handler) *httptest.Server {
 		server := httptest.NewUnstartedServer(handler)
 
-		cert, err := tls.LoadX509KeyPair("testing/data/server.pem", "testing/data/serverkey.pem")
+		cert, err := tls.LoadX509KeyPair(serverCert.CertPath, serverCert.KeyPath)
 		if err != nil {
 			t.Fatalf("Error loading server key pair: %s", err)
 		}
 
-		caCert, err := os.ReadFile("testing/data/ca.pem")
+		caCert, err := os.ReadFile(caCert.CertPath)
 		if err != nil {
 			t.Fatalf("Error loading ca certificate: %s", err)
 		}
@@ -264,10 +268,20 @@ loop:
 			t.Fatalf("%s: timed out waiting on events after %d events", testName, i)
 		}
 	}
-	cmpr := cmp.Comparer(func(e1, e2 APIEvents) bool {
+	cmpAPIEvent := func(e1, e2 APIEvents) int {
+		diff := int(e1.TimeNano - e2.TimeNano)
+		if diff != 0 {
+			return diff
+		}
+
+		return strings.Compare(e1.Action, e2.Action)
+	}
+	slices.SortFunc(events, cmpAPIEvent)
+	slices.SortFunc(wantedEvents, cmpAPIEvent)
+	cmpEqual := cmp.Comparer(func(e1, e2 APIEvents) bool {
 		return e1.Action == e2.Action && e1.Actor.ID == e2.Actor.ID
 	})
-	if dff := cmp.Diff(events, wantedEvents, cmpr); dff != "" {
+	if dff := cmp.Diff(events, wantedEvents, cmpEqual); dff != "" {
 		t.Errorf("wrong events:\n%s", dff)
 	}
 }
